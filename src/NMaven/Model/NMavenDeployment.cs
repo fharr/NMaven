@@ -12,5 +12,6 @@ namespace NMaven.Model
         public string ArtifactId => this.GetItemMetadata();
         public string Files => this.GetItemMetadata();
         public string Destination => this.GetItemMetadata();
+        public bool PreserveDirectories => bool.TryParse( this.GetItemMetadata(), out var result) && result;
     }
 }
