@@ -17,10 +17,4 @@
 	  <PackageReference Include="NMaven" Version="0.1.0" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <None Update="Resources\MANIFEST.MF">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
-	</ItemGroup>
-
 </Project>

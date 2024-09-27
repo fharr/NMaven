@@ -29,7 +29,7 @@ namespace NMaven
 
             foreach (var deployment in artifactDeployments)
             {
-                Deploy(reference, artifactDirectory, deployment);
+                Deploy(artifactDirectory, deployment);
             }
         }
 
@@ -51,7 +51,7 @@ namespace NMaven
             }
         }
 
-        private void Deploy(MavenReference reference, DirectoryInfo packageDirectory, NMavenDeployment deployment)
+        private void Deploy(DirectoryInfo packageDirectory, NMavenDeployment deployment)
         {
             try
             {
@@ -61,27 +61,11 @@ namespace NMaven
 
                 var files = packageDirectory.GetFiles(deployment.Files, SearchOption.AllDirectories);
 
-                var artifactRootDir = reference.GetArtifactDirectory(_nmvnPackageRoot).FullName;
-
                 foreach (var file in files)
                 {
                     _logger.LogMessage($"- Copying {file.FullName}");
 
-                    var destinationFile = file.Name;
-
-                    if (deployment.PreserveDirectories)
-                    {
-                        destinationFile = file.FullName.Replace(artifactRootDir, "").TrimStart('\\');
-                    }
-
-                    var directoryName = new FileInfo(Path.Combine(deployment.Destination, destinationFile)).DirectoryName;
-
-                    if (directoryName != null && !Directory.Exists(directoryName))
-                    {
-                        Directory.CreateDirectory(directoryName);
-                    }
-
-                    File.Copy(file.FullName, Path.Combine(deployment.Destination, destinationFile), true);
+                    File.Copy(file.FullName, Path.Combine(deployment.Destination, file.Name), true);
                 }
             }
             catch (Exception ex)

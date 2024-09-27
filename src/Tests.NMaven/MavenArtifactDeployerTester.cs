@@ -83,7 +83,7 @@ namespace Tests.NMaven
         public void ShouldExtractReferenceManifest()
         {
             var reference = ModelFactory.CreateMavenReference("commons-compress", "org.apache.commons", "1.23.0");
-            var deployment = ModelFactory.CreateNMavenDeployment("MANIFEST", "commons-compress", "MANIFEST.MF", DeployRoot, "false");
+            var deployment = ModelFactory.CreateNMavenDeployment("MANIFEST", "commons-compress", "MANIFEST.MF", DeployRoot);
 
             var logger = new Mock<ITaskLogger>();
 
@@ -93,42 +93,12 @@ namespace Tests.NMaven
 
             DeployRootInfo.EnumerateFiles("MANIFEST.MF").Should().HaveCount(1);
         }
-        
-        [Test]
-        public void ShouldExtractReferenceManifestInSubDir()
-        {
-            var reference = ModelFactory.CreateMavenReference("commons-compress", "org.apache.commons", "1.23.0");
-            var deployment = ModelFactory.CreateNMavenDeployment("MANIFEST", "commons-compress", "MANIFEST.MF", DeployRoot, "true");
-
-            var logger = new Mock<ITaskLogger>();
-
-            var deployer = new MavenArtifactDeployer(logger.Object, PackageRootInfo, deployment);
-
-            deployer.Deploy(reference);
-
-            DeployRootInfo.EnumerateFiles("META-INF\\MANIFEST.MF").Should().HaveCount(1);
-        }
-        
-        [Test]
-        public void ShouldExtractReferenceAllFilesInSubDir()
-        {
-            var reference = ModelFactory.CreateMavenReference("commons-compress", "org.apache.commons", "1.23.0");
-            var deployment = ModelFactory.CreateNMavenDeployment("*", "commons-compress", "*", DeployRoot, "true");
-
-            var logger = new Mock<ITaskLogger>();
-
-            var deployer = new MavenArtifactDeployer(logger.Object, PackageRootInfo, deployment);
-
-            deployer.Deploy(reference);
-
-            DeployRootInfo.EnumerateFiles("META-INF\\MANIFEST.MF").Should().HaveCount(1);
-        }
 
         [Test]
         public void ShouldFailExtractReferenceFakeFile()
         {
             var reference = ModelFactory.CreateMavenReference("commons-compress", "org.apache.commons", "1.23.0");
-            var deployment = ModelFactory.CreateNMavenDeployment("FakeFile", "commons-compress", "fake/path/to.file", DeployRoot, "false");
+            var deployment = ModelFactory.CreateNMavenDeployment("FakeFile", "commons-compress", "fake/path/to.file", DeployRoot);
 
             var logger = new Mock<ITaskLogger>();
 

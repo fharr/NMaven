@@ -27,7 +27,7 @@ namespace Tests.NMaven.Model
             return new MavenReference(task.Object);
         }
 
-        public static NMavenDeployment CreateNMavenDeployment(string name, string artifactId, string files, string destination, string preserve)
+        public static NMavenDeployment CreateNMavenDeployment(string name, string artifactId, string files, string destination)
         {
             var task = new Mock<ITaskItem>();
 
@@ -35,7 +35,7 @@ namespace Tests.NMaven.Model
             task.Setup(i => i.GetMetadata("ArtifactId")).Returns(artifactId);
             task.Setup(i => i.GetMetadata("Files")).Returns(files);
             task.Setup(i => i.GetMetadata("Destination")).Returns(destination);
-            task.Setup(i => i.GetMetadata("PreserveDirectories")).Returns(preserve);
+
             return new NMavenDeployment(task.Object);
         }
     }
