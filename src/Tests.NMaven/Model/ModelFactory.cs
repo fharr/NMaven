@@ -6,12 +6,14 @@ namespace Tests.NMaven.Model
 {
     public static class ModelFactory 
     {
-        public static MavenRepository CreateMavenRepository(string name, string url)
+        public static MavenRepository CreateMavenRepository(string name, string url, string? username = null, string? password = null)
         {
             var task = new Mock<ITaskItem>();
 
             task.Setup(i => i.GetMetadata("Identity")).Returns(name);
             task.Setup(i => i.GetMetadata("Url")).Returns(url);
+            task.Setup(i => i.GetMetadata("Username")).Returns(username ?? string.Empty);
+            task.Setup(i => i.GetMetadata("Password")).Returns(password ?? string.Empty);
 
             return new MavenRepository(task.Object);
         }

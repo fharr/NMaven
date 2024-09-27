@@ -24,7 +24,10 @@ namespace NMaven
             _httpClient = new HttpClient(new HttpClientHandler
             {
                 ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true
-            });
+            })
+            {
+                Timeout = TimeSpan.FromMinutes(30)
+            };
         }
 
         public void Dispose()

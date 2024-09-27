@@ -1,4 +1,5 @@
-﻿using Microsoft.Build.Framework;
+﻿using System;
+using Microsoft.Build.Framework;
 
 namespace NMaven.Model
 {
@@ -15,16 +16,15 @@ namespace NMaven.Model
 
         public string GetBasicAuthorizationHeader()
         {
-            if (Username != null && Password != null)
-            {
-                var auth = $"{Username}:{Password}";
-                var auth64 = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(auth));
-                return auth64;
-            }
-            else
+            if (string.IsNullOrWhiteSpace(this.Username) || string.IsNullOrWhiteSpace(this.Password))
             {
                 return null;
             }
+
+            var auth = $"{Username}:{Password}";
+            var auth64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(auth));
+
+            return auth64;
         }
     }
 }
