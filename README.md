@@ -25,6 +25,11 @@ If `username` and `password` are provided, they will be used to authenticate aga
 
 3. Don't forget to add the deployed file(s) to your `.gitignore` since they will be deployed at each build.
 
+# MavenReference rules
+
+Optional parameter `Classifier` (default ``) can be set to any string value. It will happen the classifier to the download url.
+
+Optional parameter `Type` (default `jar`) can be set to any string value. It will change the extension of the file in the download url.
 
 # NMavenDeployment rules
 The `Files` metadata is used to select the files to deploy to the project from within the jar file. This selector relies on the `DirectoryInfo.GetFiles(string searchPattern, SearchOption option)` method, with `SearchOption.AllDirectories` passed.
