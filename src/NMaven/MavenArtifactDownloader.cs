@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using NMaven.Logging;
 using NMaven.Model;
@@ -20,7 +21,10 @@ namespace NMaven
             _repositories = repositories;
             _nmvnPackageRoot = nmvnPackageRoot;
 
-            _httpClient = new HttpClient();
+            _httpClient = new HttpClient(new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true
+            });
         }
 
         public void Dispose()
@@ -34,8 +38,18 @@ namespace NMaven
 
             if (artifactFileInfo.Exists)
             {
-                _logger.LogMessage($"Artifact {reference.ArtifactId} already downloaded on disk. Skipping download.");
-                return true;
+                if (reference.Overwrite)
+                {
+                    // Delete local file and proceed as if it didn't exist
+                    _logger.LogMessage($"Artifact {reference.ArtifactId} already downloaded on disk. Overwriting.");
+                    artifactFileInfo.Delete();
+                }
+                else
+                {
+                    // File already exists, no-op
+                    _logger.LogMessage($"Artifact {reference.ArtifactId} already downloaded on disk. Skipping download.");
+                    return true;
+                }
             }
 
             foreach (var repository in _repositories)
@@ -67,14 +81,24 @@ namespace NMaven
         private async Task<byte[]> DownloadArtifactAsync(MavenReference reference, MavenRepository repository)
         {
             var url = reference.GetRepositoryUrl(repository);
+            var auth = repository.GetBasicAuthorizationHeader();
 
             _logger.LogMessage($"Downloading reference {reference.ArtifactId} ({reference.GroupId}) in version {reference.Version}");
 
-            var response = await _httpClient.GetAsync(url);
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+            if (auth != null)
+            {
+                _logger.LogMessage($"Using authorization: Basic {auth}");
+                request.Headers.Authorization = new AuthenticationHeaderValue("Basic", auth);
+            }
+
+            _logger.LogMessage($"Downloading artifact from: {url}");
+            var response = await _httpClient.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
             {
-                throw new InvalidOperationException($"Error while downloading the artifact ({(int)response.StatusCode} - {response.ReasonPhrase})");
+                var responseBody = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Error downloading the artifact ({(int)response.StatusCode} {response.ReasonPhrase}): {responseBody}");
             }
 
             var content = await response.Content.ReadAsByteArrayAsync();

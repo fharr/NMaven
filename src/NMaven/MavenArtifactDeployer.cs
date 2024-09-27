@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -20,17 +21,23 @@ namespace NMaven
             _nmvnPackageRoot = nmvnPackageRoot;
         }
 
-        public void Deploy(MavenReference reference)
+        public IEnumerable<string> Deploy(MavenReference reference)
         {
             this.UnzipArtifact(reference);
 
             var artifactDeployments = _deployments.Where(d => d.ArtifactId == reference.ArtifactId);
             var artifactDirectory = reference.GetArtifactDirectory(_nmvnPackageRoot);
 
+            IEnumerable<string> allDeployedFiles = Enumerable.Empty<string>();
+
             foreach (var deployment in artifactDeployments)
             {
-                Deploy(reference, artifactDirectory, deployment);
+                var deployedFiles = Deploy(artifactDirectory, deployment);
+                if (deployedFiles != null)
+                    allDeployedFiles = allDeployedFiles.Concat(deployedFiles);
             }
+
+            return allDeployedFiles;
         }
 
         private void UnzipArtifact(MavenReference reference)
@@ -51,43 +58,55 @@ namespace NMaven
             }
         }
 
-        private void Deploy(MavenReference reference, DirectoryInfo packageDirectory, NMavenDeployment deployment)
+        private IList<string> Deploy(DirectoryInfo packageDirectory, NMavenDeployment deployment)
         {
             try
             {
-                var destination = Directory.CreateDirectory(deployment.Destination);
+                List<string> deployedFiles = new List<string>();
+                var destinationRoot = Directory.CreateDirectory(deployment.Destination);
 
-                _logger.LogMessage($"Deploying {deployment.Name} for artifact {deployment.ArtifactId} into {destination.FullName}.");
+                _logger.LogMessage($"Deploying {deployment.Name} for artifact {deployment.ArtifactId} into {destinationRoot.FullName}.");
 
+                // This is directory name inside the package.
+                var filesSubdirectory = Path.GetDirectoryName(deployment.Files);
+                // All files that should be deployed (copied)
                 var files = packageDirectory.GetFiles(deployment.Files, SearchOption.AllDirectories);
-
-                var artifactRootDir = reference.GetArtifactDirectory(_nmvnPackageRoot).FullName;
 
                 foreach (var file in files)
                 {
-                    _logger.LogMessage($"- Copying {file.FullName}");
-
-                    var destinationFile = file.Name;
-
-                    if (deployment.PreserveDirectories)
+                    DirectoryInfo destinationDirectory = destinationRoot;
+                    if (deployment.PreserveFolderStructure)
                     {
-                        destinationFile = file.FullName.Replace(artifactRootDir, "").TrimStart('\\');
+                        var relativePath = file.DirectoryName.Substring(packageDirectory.FullName.Length).TrimStart('\\', '/');
+                        // If 'Files' was specified using a folder name, we need to remove it from the relative path too.
+                        if (deployment.RemoveRelativePath && filesSubdirectory.Length > 0)
+                        {
+                            relativePath = relativePath.Substring(filesSubdirectory.Length).TrimStart('\\', '/');
+                        }
+                        // It might still be root - so avoid CreateSubdirectory as it'll break on empty string parameter.
+                        if (relativePath != string.Empty)
+                        {
+                            destinationDirectory = destinationRoot.CreateSubdirectory(relativePath);
+                        }
                     }
 
-                    var directoryName = new FileInfo(Path.Combine(deployment.Destination, destinationFile)).DirectoryName;
+                    var destinationFileName = Path.Combine(destinationDirectory.FullName, file.Name);
 
-                    if (directoryName != null && !Directory.Exists(directoryName))
-                    {
-                        Directory.CreateDirectory(directoryName);
-                    }
+                    _logger.LogMessage($"- Copying {file.FullName} -> {destinationFileName}");
 
-                    File.Copy(file.FullName, Path.Combine(deployment.Destination, destinationFile), true);
+                    File.Copy(file.FullName, destinationFileName, overwrite: true);
+
+                    deployedFiles.Add(destinationFileName);
                 }
+
+                return deployedFiles;
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Cannot execute {deployment.Name} deployment: ${ex.Message}.");
             }
+
+            return null;
         }
     }
 }
